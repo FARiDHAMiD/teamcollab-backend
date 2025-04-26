@@ -20,14 +20,6 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         # token['groups'] = user.groups.all()
         token['username'] = user.username
         token['role'] = user.role
-        
-        if user.role == 'DOCTOR' and hasattr(user, 'doctor_profile'):
-            token['profile_id'] = user.doctor_profile.id
-        elif user.role == 'PATIENT' and hasattr(user, 'patient_profile'):
-            token['profile_id'] = user.patient_profile.id
-        else:
-            token['profile_id'] = None
-        # ...
 
         return token
 
@@ -64,19 +56,23 @@ class LogoutView(APIView):
         except Exception:
             return Response({"error": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
 
+
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
 
-    # Return users based on roles
     def get_queryset(self):
         user = self.request.user
-        if user.role == User.Role.ADMIN:
+        if user.role == 'manager':
             return User.objects.all()
-        elif user.role == User.Role.DOCTOR:
-            return User.objects.filter(role=User.Role.DOCTOR)
-        return User.objects.filter(id=user.id)  # Patients see only themselves
+        elif user.role == 'developer':
+            return User.objects.filter(role='developer')
+        elif user.role == 'tester':
+            return User.objects.filter(role='tester')
+        return User.objects.filter(id=user.id)
+
+
 
 class TaskViewSet(viewsets.ModelViewSet):
     queryset = Task.objects.select_related('created_by').prefetch_related('assigned_to')

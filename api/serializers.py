@@ -60,24 +60,27 @@ class TokenSerializer(serializers.Serializer):
 
 
 class TaskSerializer(serializers.ModelSerializer):
-    assigned_to = UserSerializer(many=True, read_only=True)
-    assigned_to_ids = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), many=True, write_only=True)
+    assigned_to = UserSerializer(read_only=True)
+    assigned_to_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        source='assigned_to',  # maps to the `assigned_to` field
+        write_only=True
+    )
 
     class Meta:
         model = Task
-        fields = ['id', 'title', 'description', 'status', 'priority', 'assigned_to', 'assigned_to_ids', 'created_by', 'created_at']
+        fields = [
+            'id', 'title', 'description', 
+            'status', 'priority', 
+            'assigned_to', 'assigned_to_id', 
+            'created_by', 'created_at'
+        ]
+        read_only_fields = ['created_by', 'created_at']
 
     def create(self, validated_data):
-        assigned_users = validated_data.pop('assigned_to_ids')
-        task = Task.objects.create(**validated_data)
-        task.assigned_to.set(assigned_users)
-        return task
-
-    def update(self, instance, validated_data):
-        if 'assigned_to_ids' in validated_data:
-            instance.assigned_to.set(validated_data.pop('assigned_to_ids'))
-        return super().update(instance, validated_data)
-
+        validated_data['created_by'] = self.context['request'].user
+        return super().create(validated_data)
+    
 class CommentSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)
     mentions = UserSerializer(many=True, read_only=True)

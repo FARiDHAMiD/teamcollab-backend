@@ -16,6 +16,9 @@ class User(AbstractUser):
     groups = models.ManyToManyField(Group, related_name="custom_user_groups", blank=True)
     user_permissions = models.ManyToManyField(Permission, related_name="custom_user_permissions", blank=True)
 
+    def __str__(self):
+        return self.username
+
 class Task(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),
@@ -36,12 +39,22 @@ class Task(models.Model):
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
     created_at = models.DateTimeField(auto_now_add=True)
 
+    
+    def __str__(self):
+        return self.title
+
+
 class Comment(models.Model):
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='comments')
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     content = models.TextField()
     mentions = models.ManyToManyField(User, related_name='mentions', blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    
+    def __str__(self):
+        return f'{self.author.username} {self.task.title}'
+
 
 class Notification(models.Model):
     recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')

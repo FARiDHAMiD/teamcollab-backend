@@ -72,8 +72,8 @@ class TaskSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'description', 
             'status', 'priority', 
-            'assigned_to', 'assigned_to_id', 
-            'created_by', 'created_at'
+            'assigned_to', 'assigned_to_id',
+            'created_by', 'created_at', 'due_date'
         ]
         read_only_fields = ['created_by', 'created_at']
 
@@ -84,7 +84,7 @@ class TaskSerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)
     mentions = UserSerializer(many=True, read_only=True)
-    mention_ids = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), many=True, write_only=True)
+    mention_ids = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), many=True, write_only=True, required=False)
 
     class Meta:
         model = Comment

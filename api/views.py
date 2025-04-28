@@ -72,20 +72,25 @@ class UserViewSet(viewsets.ModelViewSet):
             return User.objects.filter(role='tester')
         return User.objects.filter(id=user.id)
 
-
-
 class TaskViewSet(viewsets.ModelViewSet):
     queryset = Task.objects.select_related('created_by').prefetch_related('assigned_to')
     serializer_class = TaskSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == 'manager':
+            # Managers see all tasks
+            return Task.objects.all()
+        else:
+            # Developers and testers see only tasks assigned to them
+            return Task.objects.filter(assigned_to=user)
+
     def perform_create(self, serializer):
-        # Managers only:
         if self.request.user.role != 'manager':
             raise permissions.PermissionDenied("Only managers can assign tasks.")
         task = serializer.save(created_by=self.request.user)
 
-        # Notify assigned users
         for user in task.assigned_to.all():
             Notification.objects.create(
                 recipient=user,
@@ -95,19 +100,36 @@ class TaskViewSet(viewsets.ModelViewSet):
             self.send_socket_event(user.id, f"New task assigned: {task.title}")
 
     def send_socket_event(self, user_id, message):
-        # Call your Node.js server API
         try:
             requests.post('http://localhost:4000/notify', json={
                 'userId': user_id,
                 'message': message
             })
         except:
-            pass  # Don't block on failure
+            pass
+
+    @action(detail=True, methods=['get'], url_path='user-tasks')
+    def user_tasks(self, request, pk=None):
+        try:
+            user = User.objects.get(pk=pk)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        tasks = Task.objects.filter(assigned_to=user)
+        serializer = self.get_serializer(tasks, many=True)
+        return Response(serializer.data)
+
 
 class CommentViewSet(viewsets.ModelViewSet):
-    queryset = Comment.objects.select_related('task', 'author').prefetch_related('mentions')
     serializer_class = CommentSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = Comment.objects.select_related('task', 'author').prefetch_related('mentions')
+        task_id = self.request.query_params.get('task_id')
+        if task_id:
+            queryset = queryset.filter(task__id=task_id)
+        return queryset
 
     def perform_create(self, serializer):
         comment = serializer.save(author=self.request.user)

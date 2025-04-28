@@ -99,11 +99,11 @@ SIMPLE_JWT = {
 
 # Allow requests from frontend
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:8080",  # React frontend
+    "http://localhost:3000",  # React frontend
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:8080",  # React frontend
+    "http://localhost:3000",  # React frontend
 ]
 
 # Allow credentials (important for authentication)

@@ -58,15 +58,21 @@ class TokenSerializer(serializers.Serializer):
     access = serializers.CharField()
 
 
+class AssignedToField(serializers.PrimaryKeyRelatedField):
+    def to_internal_value(self, data):
+        if isinstance(data, dict):
+            return super().to_internal_value(data.get("id"))
+        return super().to_internal_value(data)
+
 
 class TaskSerializer(serializers.ModelSerializer):
     assigned_to = UserSerializer(read_only=True)
     assigned_to_id = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),
-        source='assigned_to',  # maps to the `assigned_to` field
+        source='assigned_to',
         write_only=True
     )
-
+    
     class Meta:
         model = Task
         fields = [
@@ -75,7 +81,7 @@ class TaskSerializer(serializers.ModelSerializer):
             'assigned_to', 'assigned_to_id',
             'created_by', 'created_at', 'due_date'
         ]
-        read_only_fields = ['created_by', 'created_at']
+        read_only_fields = ['created_at']
 
     def create(self, validated_data):
         validated_data['created_by'] = self.context['request'].user

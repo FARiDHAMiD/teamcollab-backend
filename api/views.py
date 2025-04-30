@@ -72,8 +72,14 @@ class UserViewSet(viewsets.ModelViewSet):
             return User.objects.filter(role='tester')
         return User.objects.filter(id=user.id)
 
+    @action(detail=False, methods=['get'], url_path='developers-testers')
+    def list_users(self, request):
+        qs = User.objects.filter(role__in=['developer', 'tester'])
+        serializer = self.get_serializer(qs, many=True)
+        return Response(serializer.data)
+
 class TaskViewSet(viewsets.ModelViewSet):
-    queryset = Task.objects.select_related('created_by').prefetch_related('assigned_to')
+    queryset = Task.objects.select_related('created_by').select_related('assigned_to')
     serializer_class = TaskSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -91,13 +97,13 @@ class TaskViewSet(viewsets.ModelViewSet):
             raise permissions.PermissionDenied("Only managers can assign tasks.")
         task = serializer.save(created_by=self.request.user)
 
-        for user in task.assigned_to.all():
-            Notification.objects.create(
-                recipient=user,
-                message=f"You were assigned to task: {task.title}",
-                url=f"/tasks/{task.id}/"
-            )
-            self.send_socket_event(user.id, f"New task assigned: {task.title}")
+        # No `.all()` needed for ForeignKey, just use `task.assigned_to`
+        Notification.objects.create(
+            recipient=task.assigned_to,
+            message=f"You were assigned to task: {task.title}",
+            url=f"/tasks/{task.id}/"
+        )
+        self.send_socket_event(task.assigned_to.id, f"New task assigned: {task.title}")
 
     def send_socket_event(self, user_id, message):
         try:

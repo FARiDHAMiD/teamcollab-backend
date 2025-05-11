@@ -40,6 +40,7 @@ class Task(models.Model):
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
     created_at = models.DateTimeField(auto_now_add=True)
     due_date = models.DateTimeField(blank=True, null=True)
+    attachment = models.FileField(upload_to='task_attachments/', null=True, blank=True)
 
     
     def __str__(self):

@@ -72,21 +72,23 @@ class TaskSerializer(serializers.ModelSerializer):
         source='assigned_to',
         write_only=True
     )
-    
+    attachment = serializers.FileField(required=False, allow_null=True)
+
     class Meta:
         model = Task
         fields = [
             'id', 'title', 'description', 
             'status', 'priority', 
             'assigned_to', 'assigned_to_id',
-            'created_by', 'created_at', 'due_date'
+            'created_by', 'created_at', 'due_date',
+            'attachment'  
         ]
-        read_only_fields = ['created_at']
+        read_only_fields = ['created_by', 'created_at']
 
     def create(self, validated_data):
         validated_data['created_by'] = self.context['request'].user
         return super().create(validated_data)
-    
+
 class CommentSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)
     mentions = UserSerializer(many=True, read_only=True)

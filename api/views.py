@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework.parsers import MultiPartParser, FormParser
 from .models import *
 from .serializers import *
 import requests
@@ -82,6 +83,7 @@ class TaskViewSet(viewsets.ModelViewSet):
     queryset = Task.objects.select_related('created_by').select_related('assigned_to')
     serializer_class = TaskSerializer
     permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
 
     def get_queryset(self):
         user = self.request.user
